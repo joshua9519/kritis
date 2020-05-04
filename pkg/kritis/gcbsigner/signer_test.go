@@ -213,7 +213,7 @@ func TestValidateAndSign(t *testing.T) {
 				Validate: buildpolicy.ValidateBuildPolicy,
 				Secret:   sMock,
 			})
-			if err := r.ValidateAndSign(tc.provenance, bps); (err != nil) != tc.shdErr {
+			if err := r.ValidateAndSign(tc.provenance, bps, "kritis"); (err != nil) != tc.shdErr {
 				t.Errorf("ValidateAndSign returned error %s, want %t", err, tc.shdErr)
 			}
 			if !reflect.DeepEqual(cMock.Occ, tc.expectedAttestations) {

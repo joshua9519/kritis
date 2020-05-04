@@ -53,7 +53,7 @@ func run(ctx context.Context, project string, subscription string, ns string) er
 	for err == nil {
 		glog.Infof("Listening")
 		err = sub.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) {
-			if err := process(ns, msg); err != nil {
+			if err := process(ns, project, msg); err != nil {
 				glog.Errorf("Error signing: %v", err)
 				msg.Nack()
 			} else {
@@ -64,7 +64,7 @@ func run(ctx context.Context, project string, subscription string, ns string) er
 	return fmt.Errorf("Error receiving message: %v", err)
 }
 
-func process(ns string, msg *pubsub.Message) error {
+func process(ns, project string, msg *pubsub.Message) error {
 	provenance, err := gcbsigner.ExtractBuildProvenanceFromEvent(msg)
 	if err != nil {
 		return fmt.Errorf("Error extracting images from message: %v", err)
@@ -87,7 +87,7 @@ func process(ns string, msg *pubsub.Message) error {
 		Validate: buildpolicy.ValidateBuildPolicy,
 	})
 	for _, prov := range provenance {
-		if err := r.ValidateAndSign(prov, bps); err != nil {
+		if err := r.ValidateAndSign(prov, bps, project); err != nil {
 			return fmt.Errorf("Error creating signature: %v", err)
 		}
 	}

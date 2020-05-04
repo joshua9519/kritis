@@ -29,6 +29,7 @@ import (
 	kritis "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	"github.com/grafeas/kritis/pkg/kritis/metadata/grafeas"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"k8s.io/api/admission/v1beta1"
 	v1 "k8s.io/api/core/v1"
@@ -66,7 +67,7 @@ func Test_BreakglassAnnotation(t *testing.T) {
 
 func TestReviewHandler(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ReviewHandler(w, r, &Config{})
+		ReviewHandler(w, r, &Config{}, grafeas.DefaultProject)
 	}))
 	defer s.Close()
 
@@ -208,7 +209,7 @@ func PodTestReviewHandler(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	}
-	reviewPod(pod, admitResponse, &Config{Metadata: constants.ContainerAnalysisMetadata})
+	reviewPod(pod, admitResponse, &Config{Metadata: constants.ContainerAnalysisMetadata}, grafeas.DefaultProject)
 	// Send response
 	w.Header().Set("Content-Type", "application/json")
 	payload, err := json.Marshal(admitResponse)

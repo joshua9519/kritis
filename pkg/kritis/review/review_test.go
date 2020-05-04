@@ -24,6 +24,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	"github.com/grafeas/kritis/pkg/kritis/metadata/grafeas"
 	"github.com/grafeas/kritis/pkg/kritis/policy"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
@@ -501,7 +502,7 @@ func TestReviewISP(t *testing.T) {
 				IsWebhook: tc.isWebhook,
 				Strategy:  &th,
 			})
-			if err := r.ReviewISP([]string{tc.image}, isps, nil, cMock); (err != nil) != tc.shouldErr {
+			if err := r.ReviewISP([]string{tc.image}, grafeas.DefaultProject, isps, nil, cMock); (err != nil) != tc.shouldErr {
 				t.Errorf("expected review to return error %t, actual error %s", tc.shouldErr, err)
 			}
 			if len(th.Violations) != tc.handledViolations {

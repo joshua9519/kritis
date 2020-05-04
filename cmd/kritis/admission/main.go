@@ -51,6 +51,7 @@ var (
 	grafeasCerts string
 	showVersion  bool
 	runCron      bool
+	gcbProject   string
 )
 
 func main() {
@@ -59,6 +60,7 @@ func main() {
 	flag.StringVar(&grafeasCerts, "grafeas-certs", "/etc/config/grafeascerts.yaml", "Grafeas certificates.")
 	flag.BoolVar(&showVersion, "version", false, "kritis-server version")
 	flag.BoolVar(&runCron, "run-cron", false, "Run cron job in foreground.")
+	flag.StringVar(&gcbProject, "gcb_project", grafeas.DefaultProject, "Id of the project running GCB")
 	flag.Parse()
 	if err := flag.Set("logtostderr", "true"); err != nil {
 		glog.Fatal(errors.Wrap(err, "unable to set logtostderr"))
@@ -121,7 +123,7 @@ func main() {
 		if err != nil {
 			glog.Fatalf("Could not run cron job in foreground: %s", err)
 		}
-		if err := cron.RunInForeground(*cronConfig); err != nil {
+		if err := cron.RunInForeground(*cronConfig, gcbProject); err != nil {
 			glog.Fatalf("Error Checking pods: %s", err)
 		}
 		return
@@ -135,7 +137,7 @@ func main() {
 	// Start the Kritis Server.
 	glog.Infof("Running the server, address: %s", serverAddr)
 	http.HandleFunc("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		admission.ReviewHandler(w, r, config)
+		admission.ReviewHandler(w, r, config, gcbProject)
 	}))
 	httpsServer := NewServer(serverAddr)
 	glog.Fatal(httpsServer.ListenAndServeTLS(tlsCertFile, tlsKeyFile))
@@ -161,7 +163,7 @@ func StartCronJob(config *admission.Config, cronInterval string) error {
 	if err != nil {
 		return err
 	}
-	go cron.Start(context.Background(), *cronConfig, d)
+	go cron.Start(context.Background(), *cronConfig, d, gcbProject)
 	return nil
 }
 

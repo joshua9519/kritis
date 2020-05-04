@@ -29,6 +29,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
+	"github.com/grafeas/kritis/pkg/kritis/metadata/grafeas"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -42,7 +43,7 @@ func TestStartCancels(t *testing.T) {
 
 	// Mock the check function and reset after the test.
 	originalChecker := podChecker
-	podChecker = func(cfg Config, isps []v1beta1.ImageSecurityPolicy) error {
+	podChecker = func(cfg Config, isps []v1beta1.ImageSecurityPolicy, project string) error {
 		checked = true
 		return nil
 	}
@@ -60,7 +61,7 @@ func TestStartCancels(t *testing.T) {
 		SecurityPolicyLister: func(namespace string) ([]v1beta1.ImageSecurityPolicy, error) {
 			return nil, nil
 		},
-	}, checkInterval)
+	}, checkInterval, grafeas.DefaultProject)
 
 	if !checked {
 		t.Fatalf("check function not called")
@@ -211,7 +212,7 @@ func TestCheckPods(t *testing.T) {
 			Strategy:  &th,
 		}
 		t.Run(tt.name, func(t *testing.T) {
-			if err := CheckPods(tt.args.cfg, tt.args.isps); err != nil {
+			if err := CheckPods(tt.args.cfg, tt.args.isps, grafeas.DefaultProject); err != nil {
 				t.Fatalf("CheckPods() error = %v", err)
 			}
 		})

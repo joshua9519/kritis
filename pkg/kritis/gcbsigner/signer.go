@@ -22,7 +22,6 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
 	"github.com/grafeas/kritis/pkg/kritis/crd/buildpolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
-	"github.com/grafeas/kritis/pkg/kritis/metadata/grafeas"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 )
@@ -58,7 +57,7 @@ var (
 // ValidateAndSign validates builtFrom against the build policies and creates
 // attestations for all authorities for the matching policies.
 // Returns an error if creating an attestation for any authority fails.
-func (s Signer) ValidateAndSign(prov BuildProvenance, bps []v1beta1.BuildPolicy) error {
+func (s Signer) ValidateAndSign(prov BuildProvenance, bps []v1beta1.BuildPolicy, project string) error {
 	for _, bp := range bps {
 		glog.Infof("Validating %q against BuildPolicy %q", prov.ImageRef, bp.Name)
 		if result := s.config.Validate(bp, prov.BuiltFrom); result != nil {
@@ -66,14 +65,14 @@ func (s Signer) ValidateAndSign(prov BuildProvenance, bps []v1beta1.BuildPolicy)
 			continue
 		}
 		glog.Infof("Image %q matches BuildPolicy %s, creating attestations", prov.ImageRef, bp.Name)
-		if err := s.addAttestation(prov.ImageRef, bp.Namespace, bp.Spec.AttestationAuthorityName, bp.Spec.PrivateKeySecretName); err != nil {
+		if err := s.addAttestation(prov.ImageRef, bp.Namespace, bp.Spec.AttestationAuthorityName, bp.Spec.PrivateKeySecretName, project); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s Signer) addAttestation(image string, ns string, authority string, keySecretName string) error {
+func (s Signer) addAttestation(image, ns, authority, keySecretName, project string) error {
 	// Get AttestaionAuthority specified in the buildpolicy.
 	a, err := authFetcher(ns, authority)
 	if err != nil {
@@ -89,6 +88,6 @@ func (s Signer) addAttestation(image string, ns string, authority string, keySec
 		return err
 	}
 	// Create Attestation Signature
-	_, err = s.client.CreateAttestationOccurrence(n.GetName(), image, sec, grafeas.DefaultProject)
+	_, err = s.client.CreateAttestationOccurrence(n.GetName(), image, sec, project)
 	return err
 }

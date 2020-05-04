@@ -72,7 +72,7 @@ func NewCronConfig(cs *kubernetes.Clientset, client metadata.ReadWriteClient) *C
 }
 
 // Start starts the background processing of image security policies.
-func Start(ctx context.Context, cfg Config, checkInterval time.Duration) {
+func Start(ctx context.Context, cfg Config, checkInterval time.Duration, project string) {
 	c := time.NewTicker(checkInterval)
 	done := ctx.Done()
 
@@ -85,7 +85,7 @@ func Start(ctx context.Context, cfg Config, checkInterval time.Duration) {
 				glog.Errorf("fetching image security policies: %s", err)
 				continue
 			}
-			if err := podChecker(cfg, isps); err != nil {
+			if err := podChecker(cfg, isps, project); err != nil {
 				glog.Errorf("error checking pods: %s", err)
 			}
 		case <-done:
@@ -95,7 +95,7 @@ func Start(ctx context.Context, cfg Config, checkInterval time.Duration) {
 }
 
 // CheckPods checks all running pods against defined policies.
-func CheckPods(cfg Config, isps []v1beta1.ImageSecurityPolicy) error {
+func CheckPods(cfg Config, isps []v1beta1.ImageSecurityPolicy, project string) error {
 	r := review.New(cfg.ReviewConfig)
 	for _, isp := range isps {
 		ps, err := cfg.PodLister(isp.Namespace)
@@ -104,7 +104,7 @@ func CheckPods(cfg Config, isps []v1beta1.ImageSecurityPolicy) error {
 		}
 		for _, p := range ps {
 			glog.Infof("Checking pod %s", p.Name)
-			if err := r.ReviewISP(admission.PodImages(p), isps, &p, cfg.Client); err != nil {
+			if err := r.ReviewISP(admission.PodImages(p), project, isps, &p, cfg.Client); err != nil {
 				glog.Error(err)
 			}
 		}
@@ -113,11 +113,11 @@ func CheckPods(cfg Config, isps []v1beta1.ImageSecurityPolicy) error {
 }
 
 // RunInForeground checks Pods in foreground.
-func RunInForeground(cfg Config) error {
+func RunInForeground(cfg Config, project string) error {
 	isps, err := cfg.SecurityPolicyLister("")
 	if err != nil {
 		return err
 	}
 	glog.Infof("Got isps %v", isps)
-	return podChecker(cfg, isps)
+	return podChecker(cfg, isps, project)
 }
